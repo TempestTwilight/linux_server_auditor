@@ -1,0 +1,47 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info/
+
+# Cache files
+.ruff_cache/
+.ty_cache/
+.pytest_cache/
+
+# Virtual environments
+.venv/
+
+# Plans
+.planning/
+
+# Test and coverage output
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# Secrets and environment
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.aws/
+
+# Streamlit secrets
+.streamlit/secrets.toml
+
+# Trained models and data
+*.joblib
+*.pkl
+data/raw/
+*.csv
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+.codegraph

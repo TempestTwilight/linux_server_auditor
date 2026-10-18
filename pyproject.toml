@@ -1,0 +1,43 @@
+[project]
+name = "linux-server-auditor"
+version = "0.1.0"
+description = "Linux server health inspector and security auditor"
+readme = "README.md"
+authors = [
+    { name = "TempestTwilight", email = "240898001+TempestTwilight@users.noreply.github.com" }
+]
+requires-python = ">=3.13.0, <=3.14"
+dependencies = [
+    "boto3>=1.43.114",
+    "joblib>=1.6.0",
+    "numpy>=2.5.4",
+    "pandas>=3.0.6",
+    "psutil>=7.2.2",
+    "pyyaml>=6.0.3",
+    "scikit-learn>=1.9.1",
+]
+
+[project.optional-dependencies]
+dashboard = ["streamlit>=1.66.0", "plotly>=7.1.0"]
+
+[project.scripts]
+linux-server-auditor = "linux_server_auditor:main"
+
+[build-system]
+requires = ["uv_build>=0.12.7,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.17.1",
+    "ty>=0.0.89",
+]
+
+[tool.ruff]
+line-length = 100
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=linux_server_auditor"
