@@ -73,7 +73,11 @@ StandardError=journal
 NoNewPrivileges=yes
 PrivateTmp=yes
 ProtectSystem=strict
+<<<<<<< HEAD
 ReadWritePaths=$INSTALL_DIR/data
+=======
+ReadWritePaths=$INSTALL_DIR/data /opt/uv-cache
+>>>>>>> f5284f1 (Updated the script to install uv globally)
 Environment=PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/bin
 Environment=UV_CACHE_DIR=/opt/uv-cache
 
