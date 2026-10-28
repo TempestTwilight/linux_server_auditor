@@ -1,0 +1,11 @@
+# Alert thresholds for the robust statistical detector.
+# Each field is the number of MAD units from the rolling median.
+# Tune these after reviewing baseline data.
+cpu_percent: 6.0
+memory_used_percent: 6.0
+swap_used_percent: 6.0
+disk_used_percent: 4.0
+load_1m_per_cpu: 6.0
+network_rx_bytes_per_sec: 8.0
+network_tx_bytes_per_sec: 8.0
+process_count: 6.0

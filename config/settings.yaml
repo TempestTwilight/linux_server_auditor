@@ -1,0 +1,23 @@
+agent:
+  instance_id: i-0e1df82e71bf711d0           # set to EC2 instance ID on deploy; null = auto-detect
+  sampling_interval_sec: 10
+  batch_duration_sec: 30
+  local_queue_max_bytes: 524288000   # 500 MB
+  local_queue_max_age_sec: 86400     # 24 h
+  local_queue_dir: data/queue
+
+s3:
+  bucket: fcc-s3-bucket-vd                # REQUIRED: set before deploying
+  prefix: telemetry
+  region: ap-south-1
+
+monitor:
+  db_path: data/telemetry.db
+  s3_poll_interval_sec: 30
+  stale_threshold_sec: 300    # 5 min → mark telemetry stale
+  heartbeat_interval_sec: 60
+  retention_days: 14
+
+dashboard:
+  host: 127.0.0.1
+  port: 8501

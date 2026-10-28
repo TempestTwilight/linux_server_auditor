@@ -1,0 +1,7 @@
+# Files whose SHA-256 is checked every sampling cycle.
+# Add paths you want to monitor. Keep this list short and reviewable.
+- /etc/ssh/sshd_config
+- /etc/sudoers
+- /etc/passwd
+- /etc/group
+- /etc/hosts

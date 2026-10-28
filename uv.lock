@@ -364,6 +364,9 @@ dashboard = [
     { name = "plotly" },
     { name = "streamlit" },
 ]
+express = [
+    { name = "plotly" },
+]
 
 [package.dev-dependencies]
 dev = [
@@ -380,12 +383,13 @@ requires-dist = [
     { name = "numpy", specifier = ">=2.5.4" },
     { name = "pandas", specifier = ">=3.0.6" },
     { name = "plotly", marker = "extra == 'dashboard'", specifier = ">=7.1.0" },
+    { name = "plotly", marker = "extra == 'express'", specifier = ">=7.1.0" },
     { name = "psutil", specifier = ">=7.2.2" },
     { name = "pyyaml", specifier = ">=6.0.3" },
     { name = "scikit-learn", specifier = ">=1.9.1" },
     { name = "streamlit", marker = "extra == 'dashboard'", specifier = ">=1.66.0" },
 ]
-provides-extras = ["dashboard"]
+provides-extras = ["dashboard", "express"]
 
 [package.metadata.requires-dev]
 dev = [

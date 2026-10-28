@@ -1,0 +1,36 @@
+- id: SSH-001
+  severity: high
+  description: "Failed SSH logins from one source IP"
+  condition:
+    metric_type: ssh_failed_login
+    group_by: source_ip
+    count_threshold: 5
+    window_sec: 300
+  evidence_template: "{count} failed SSH logins from {source_ip} in {window_sec}s"
+  explanation: "Multiple failed SSH logins from the same IP suggest a brute-force attempt."
+
+- id: NET-001
+  severity: medium
+  description: "Listening port not in expected inventory"
+  condition:
+    metric_type: listening_ports
+    grace_period_sec: 900
+  evidence_template: "New listening port: {port}/{proto} (pid {pid}, process {name})"
+  explanation: "An unexpected listening port may indicate an unauthorised service was started."
+
+- id: SVC-001
+  severity: high
+  description: "Watched service entered inactive or failed state"
+  condition:
+    metric_type: service_status
+    states: [inactive, failed]
+  evidence_template: "Service {service} entered state '{state}'"
+  explanation: "A required service stopped unexpectedly."
+
+- id: FIM-001
+  severity: critical
+  description: "Watchlist file changed SHA-256 hash"
+  condition:
+    metric_type: file_integrity
+  evidence_template: "File {path} hash changed from {old_hash} to {new_hash}"
+  explanation: "A critical system file was modified outside a maintenance window."
