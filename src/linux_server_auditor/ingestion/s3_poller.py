@@ -11,7 +11,7 @@ import boto3
 from botocore.exceptions import ClientError
 
 from linux_server_auditor.config import settings
-from linux_server_auditor.ingestion.deduplicator import DedupTracker, dedup_key
+from linux_server_auditor.ingestion.deduplicator import DedupTracker
 from linux_server_auditor.ingestion.validator import validate_batch
 from linux_server_auditor.storage.database import Database
 from linux_server_auditor.storage.repositories import (
@@ -185,8 +185,8 @@ class S3Poller:
                 commit(self.db)
                 self.poll_once()
                 self.db.run_retention()  # Run retention on each cycle
-            except Exception as e:
-                log.exception("Poller error: %s", e)
+            except Exception:
+                log.exception("Poller error")
 
             time.sleep(self.poll_interval)
 

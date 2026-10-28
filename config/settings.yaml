@@ -1,5 +1,5 @@
 agent:
-  instance_id: i-0e1df82e71bf711d0           # set to EC2 instance ID on deploy; null = auto-detect
+  instance_id: i-0e1df82e71bf711d0
   sampling_interval_sec: 10
   batch_duration_sec: 30
   local_queue_max_bytes: 524288000   # 500 MB
@@ -7,9 +7,9 @@ agent:
   local_queue_dir: data/queue
 
 s3:
-  bucket: fcc-s3-bucket-vd                # REQUIRED: set before deploying
+  bucket: fcc-s3-bucket-vd
   prefix: telemetry
-  region: ap-south-1
+  region: ap-southeast-2
 
 monitor:
   db_path: data/telemetry.db

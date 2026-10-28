@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
-import streamlit as st
 import plotly.express as px
+import streamlit as st
 
 from linux_server_auditor.config import settings
 from linux_server_auditor.dashboard import queries
@@ -26,8 +26,8 @@ if page == "Overview":
     latest = queries.get_latest_telemetry(DB_PATH)
     if latest["latest_timestamp"]:
         ts = datetime.fromisoformat(latest["latest_timestamp"])
-        now = datetime.now(timezone.utc)
-        age_sec = (now - ts.replace(tzinfo=timezone.utc)).total_seconds()
+        now = datetime.now(UTC)
+        age_sec = (now - ts.replace(tzinfo=UTC)).total_seconds()
         stale = age_sec > STALE_THRESHOLD_SEC
         
         col1, col2 = st.columns(2)

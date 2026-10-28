@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime
 
 SEVERITY_WEIGHTS = {"critical": 40, "high": 20, "medium": 10, "low": 5}
 CORRELATION_WINDOW_SEC = 600
@@ -26,7 +26,7 @@ def correlate_findings(findings: list[dict]) -> list[dict]:
         
         windows = []
         for f in finds:
-            ts = datetime.fromisoformat(f["timestamp"].replace("Z", "+00:00"))
+            ts = datetime.fromisoformat(f["timestamp"])
             
             # Try to add to existing window
             added = False

@@ -5,9 +5,9 @@ from __future__ import annotations
 import json
 import sqlite3
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-_utcnow = lambda: datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+_utcnow = lambda: datetime.now(UTC).isoformat(timespec="seconds").replace("+00:00", "Z")
 from typing import Any
 
 from linux_server_auditor.storage.database import Database
@@ -168,7 +168,7 @@ def record_heartbeat(db: Database, status: str = "alive") -> None:
     """Record a monitor heartbeat."""
     db.conn.execute(
         "INSERT OR REPLACE INTO monitor_heartbeats (timestamp, status) VALUES (?, ?)",
-        (datetime.utcnow().isoformat(), status),
+        (_utcnow(), status),
     )
 
 
@@ -191,7 +191,7 @@ def create_incident(
 ) -> str:
     """Create a new incident. Returns incident_id."""
     incident_id = str(uuid.uuid4())
-    now = datetime.utcnow().isoformat()
+    now = _utcnow()
     db.conn.execute(
         """
         INSERT INTO incidents

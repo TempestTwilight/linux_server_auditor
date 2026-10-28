@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import datetime, timedelta, timezone
-from pathlib import Path
+from datetime import datetime
 
 import yaml
 
@@ -31,7 +30,7 @@ def evaluate_rules(events: list[dict], baseline_ports: set[tuple] | None = None)
     for rule in rules:
         rid = rule["id"]
         cond = rule["condition"]
-        metric_type = cond["metric_type"]
+        cond["metric_type"]
         
         if rid == "SSH-001":
             findings.extend(_eval_ssh001(rule, events))
@@ -62,10 +61,10 @@ def _eval_ssh001(rule: dict, events: list[dict]) -> list[dict]:
     for ip, evts in by_ip.items():
         evts.sort(key=lambda x: x["timestamp"])
         for i, evt in enumerate(evts):
-            t0 = datetime.fromisoformat(evt["timestamp"].replace("Z", "+00:00"))
+            t0 = datetime.fromisoformat(evt["timestamp"])
             count = 1
             for j in range(i + 1, len(evts)):
-                t1 = datetime.fromisoformat(evts[j]["timestamp"].replace("Z", "+00:00"))
+                t1 = datetime.fromisoformat(evts[j]["timestamp"])
                 if (t1 - t0).total_seconds() <= window_sec:
                     count += 1
                 else:
@@ -91,7 +90,7 @@ def _eval_ssh001(rule: dict, events: list[dict]) -> list[dict]:
 def _eval_net001(rule: dict, events: list[dict], baseline_ports: set[tuple]) -> list[dict]:
     """New listening port not in baseline."""
     cond = rule["condition"]
-    grace_sec = cond["grace_period_sec"]
+    cond["grace_period_sec"]
     
     port_events = [e for e in events if e["event_type"] == "listening_ports"]
     findings = []

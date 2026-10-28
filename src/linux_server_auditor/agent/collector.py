@@ -22,6 +22,7 @@ from linux_server_auditor.agent import (
     system_metrics,
 )
 from linux_server_auditor.agent.batcher import Batcher
+from linux_server_auditor.agent.uploader import Uploader
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -71,10 +72,26 @@ def run(once: bool = False) -> None:
     interval = acfg["sampling_interval_sec"]
     iid = _instance_id()
     run_id = str(uuid.uuid4())
-    output_dir = _REPO_ROOT / acfg["local_queue_dir"].replace("data/", "data/raw/")
-    batcher = Batcher(output_dir, batch_duration_sec=acfg["batch_duration_sec"])
-    seq = 0
+    queue_dir = _REPO_ROOT / acfg.get("local_queue_dir", "data/queue")
+    batch_dir = _REPO_ROOT / "data" / "batches"
+    batcher = Batcher(batch_dir, batch_duration_sec=acfg["batch_duration_sec"])
 
+    s3_cfg = cfg.settings.get("s3", {})
+    bucket = s3_cfg.get("bucket")
+    uploader: Uploader | None = None
+    if bucket:
+        uploader = Uploader(
+            bucket=bucket,
+            prefix=s3_cfg.get("prefix", "telemetry"),
+            instance_id=iid,
+            queue_dir=queue_dir,
+            max_queue_bytes=acfg.get("local_queue_max_bytes", 524_288_000),
+            max_queue_age_sec=acfg.get("local_queue_max_age_sec", 86_400),
+            region=s3_cfg.get("region", "ap-south-1"),
+        )
+        log.info("uploader initialized for bucket=%s prefix=%s", bucket, s3_cfg.get("prefix", "telemetry"))
+
+    seq = 0
     log.info("agent start: instance=%s run=%s", iid, run_id)
 
     while True:
@@ -94,12 +111,15 @@ def run(once: bool = False) -> None:
             batch_path = batcher.add(rec)
             if batch_path:
                 log.info("batch ready: %s (%d bytes)", batch_path.name, batch_path.stat().st_size)
-                # Week 2: uploader.upload(batch_path) goes here
+                if uploader:
+                    uploader.upload(batch_path)
 
         if once:
             path = batcher.flush()
             if path:
                 log.info("flushed: %s", path)
+                if uploader:
+                    uploader.upload(path)
             break
 
         sleep_for = max(0.0, interval - 1.0)  # subtract time already spent in cpu_percent

@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import sqlite3
 from pathlib import Path
+from typing import Self
 
 from linux_server_auditor.config import settings
 
@@ -56,7 +57,7 @@ class Database:
             log.info("Retention deleted %d records older than %d days", deleted, days)
         return deleted
 
-    def __enter__(self) -> "Database":
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(self, *args) -> None:

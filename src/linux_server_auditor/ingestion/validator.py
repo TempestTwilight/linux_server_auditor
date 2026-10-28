@@ -16,7 +16,6 @@ MAX_BATCH_SIZE = 1024 * 1024  # 1MB
 
 class ValidationError(Exception):
     """Record validation failed."""
-    pass
 
 
 def validate_record(record: dict[str, Any], size_bytes: int | None = None) -> list[str]:
@@ -44,7 +43,7 @@ def validate_record(record: dict[str, Any], size_bytes: int | None = None) -> li
         ts = record["timestamp"]
         # Accept both with and without Z suffix
         if ts.endswith("Z"):
-            datetime.fromisoformat(ts[:-1] + "+00:00")
+            datetime.fromisoformat(ts)
         else:
             datetime.fromisoformat(ts)
     except (ValueError, TypeError):

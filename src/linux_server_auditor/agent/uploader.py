@@ -68,7 +68,8 @@ class Uploader:
 
     def _enqueue(self, path: Path) -> None:
         dest = self._queue / path.name
-        path.rename(dest)
+        if path.resolve() != dest.resolve():
+            path.rename(dest)
         log.info("queued %s", dest.name)
         self._enforce_queue_limit()
 
