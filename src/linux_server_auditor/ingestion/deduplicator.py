@@ -10,9 +10,17 @@ from typing import Any
 log = logging.getLogger(__name__)
 
 
-def dedup_key(record: dict[str, Any]) -> tuple[str, str, int]:
-    """Extract the deduplication key from a record."""
-    return (record["instance_id"], record["agent_run_id"], record["sequence"])
+DedupKey = tuple[str, str, str, int]
+
+
+def dedup_key(record: dict[str, Any]) -> DedupKey:
+    """Extract the deduplication key from a record: (instance_id, agent_run_id, type, sequence)."""
+    return (
+        str(record.get("instance_id", "")),
+        str(record.get("agent_run_id", "")),
+        str(record.get("type", "")),
+        int(record.get("sequence", 0)),
+    )
 
 
 def record_hash(record: dict[str, Any]) -> str:
@@ -24,8 +32,8 @@ def record_hash(record: dict[str, Any]) -> str:
 
 def deduplicate(
     records: list[dict[str, Any]],
-    seen_keys: set[tuple[str, str, int]],
-    content_hashes: dict[tuple[str, str, int], str] | None = None,
+    seen_keys: set[DedupKey],
+    content_hashes: dict[DedupKey, str] | None = None,
 ) -> tuple[list[dict[str, Any]], list[str]]:
     """
     Deduplicate records against already-seen keys.
@@ -66,8 +74,8 @@ class DedupTracker:
     """Stateful deduplication tracker."""
 
     def __init__(self) -> None:
-        self.seen_keys: set[tuple[str, str, int]] = set()
-        self.content_hashes: dict[tuple[str, str, int], str] = {}
+        self.seen_keys: set[DedupKey] = set()
+        self.content_hashes: dict[DedupKey, str] = {}
 
     def filter(self, records: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[str]]:
         """Filter records, tracking seen keys. Returns (unique, errors)."""

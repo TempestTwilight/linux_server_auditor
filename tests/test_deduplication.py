@@ -18,7 +18,7 @@ def _rec(instance_id="i-001", agent_run_id="run-1", sequence=1, **extra):
 
 def test_dedup_key():
     rec = _rec()
-    assert dedup_key(rec) == ("i-001", "run-1", 1)
+    assert dedup_key(rec) == ("i-001", "run-1", "system_metrics", 1)
 
 
 def test_unique_records_pass_through():

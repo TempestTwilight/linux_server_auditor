@@ -1,15 +1,15 @@
 {
-  "timestamp_utc": "2026-11-02T07:35:46Z",
+  "timestamp_utc": "2026-11-02T08:13:51Z",
   "total_scenarios": 7,
   "passed_scenarios": 7,
   "failed_scenarios": 0,
   "overall": {
     "tp": 6,
-    "fp": 0,
+    "fp": 293,
     "fn": 0,
-    "precision": 1.0,
+    "precision": 0.02,
     "recall": 1.0,
-    "f1": 1.0
+    "f1": 0.039
   },
   "latency": {
     "median_seconds": 5.0,
@@ -19,11 +19,11 @@
   "per_detector": {
     "mad": {
       "tp": 2,
-      "fp": 0,
+      "fp": 266,
       "fn": 0,
-      "precision": 1.0,
+      "precision": 0.007,
       "recall": 1.0,
-      "f1": 1.0
+      "f1": 0.015
     },
     "SSH-001": {
       "tp": 1,
@@ -51,11 +51,11 @@
     },
     "FIM-001": {
       "tp": 1,
-      "fp": 0,
+      "fp": 27,
       "fn": 0,
-      "precision": 1.0,
+      "precision": 0.036,
       "recall": 1.0,
-      "f1": 1.0
+      "f1": 0.069
     }
   },
   "scenario_results": [
