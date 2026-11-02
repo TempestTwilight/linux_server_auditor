@@ -151,25 +151,62 @@ def _eval_svc001(rule: dict, events: list[dict]) -> list[dict]:
 
 def _eval_fim001(rule: dict, events: list[dict]) -> list[dict]:
     """File integrity violation."""
-    fim_events = [e for e in events if e["event_type"] == "file_integrity"]
-    findings = []
+    fim_events = [e for e in events if e.get("event_type") == "file_integrity"]
+    findings: list[dict] = []
+    # Track latest seen file hash per (instance, path) to detect changes across cycles
+    history: dict[tuple[str, str], str] = {}
 
-    for e in fim_events:
+    sorted_events = sorted(fim_events, key=lambda x: str(x.get("timestamp", "")))
+
+    for e in sorted_events:
         data = e.get("event_data", {})
-        path = data.get("path")
-        old_hash = data.get("old_hash", "unknown")
-        new_hash = data.get("new_hash", "unknown")
+        iid = e.get("instance_id", "unknown")
+        ts = e.get("timestamp", "")
 
-        evidence = rule["evidence_template"].format(path=path, old_hash=old_hash, new_hash=new_hash)
-        findings.append(
-            {
-                "rule_id": rule["id"],
-                "severity": rule["severity"],
-                "evidence": evidence,
-                "explanation": rule["explanation"],
-                "timestamp": e["timestamp"],
-                "instance_id": e.get("instance_id", "unknown"),
-            }
-        )
+        # 1. Direct change event (e.g. from synthetic scenario)
+        if "old_hash" in data and "new_hash" in data:
+            old_h = data.get("old_hash")
+            new_h = data.get("new_hash")
+            p = data.get("path", "unknown")
+            if old_h and new_h and old_h != new_h:
+                evidence = rule["evidence_template"].format(path=p, old_hash=old_h, new_hash=new_h)
+                findings.append(
+                    {
+                        "rule_id": rule["id"],
+                        "severity": rule["severity"],
+                        "evidence": evidence,
+                        "explanation": rule["explanation"],
+                        "timestamp": ts,
+                        "instance_id": iid,
+                    }
+                )
+            continue
+
+        # 2. Polled file list from agent: {"files": [{"path": ..., "sha256": ...}]}
+        file_list = data.get("files", [])
+        if isinstance(file_list, list):
+            for item in file_list:
+                p = item.get("path")
+                curr_sha = item.get("sha256")
+                if not p or not curr_sha:
+                    continue
+                key = (iid, p)
+                if key in history:
+                    prev_sha = history[key]
+                    if prev_sha and curr_sha != prev_sha:
+                        evidence = rule["evidence_template"].format(
+                            path=p, old_hash=prev_sha, new_hash=curr_sha
+                        )
+                        findings.append(
+                            {
+                                "rule_id": rule["id"],
+                                "severity": rule["severity"],
+                                "evidence": evidence,
+                                "explanation": rule["explanation"],
+                                "timestamp": ts,
+                                "instance_id": iid,
+                            }
+                        )
+                history[key] = curr_sha
 
     return findings

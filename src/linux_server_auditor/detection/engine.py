@@ -43,24 +43,33 @@ def run_detection(db: Database, instance_id: str | None = None) -> dict[str, Any
 
     metric_anomalies: list[dict[str, Any]] = []
     if not df_metrics.empty and len(df_metrics) >= 2:
-        try:
-            metric_anomalies.extend(detect_mad(df_metrics))
-        except Exception as e:  # noqa: BLE001
-            log.warning("Error running detect_mad: %s", e)
+        # Group by instance_id so hosts don't distort each other's baseline
+        groups = (
+            [df_metrics]
+            if "instance_id" not in df_metrics.columns
+            else [g for _, g in df_metrics.groupby("instance_id")]
+        )
+        for grp in groups:
+            if len(grp) < 2:
+                continue
+            try:
+                metric_anomalies.extend(detect_mad(grp))
+            except Exception as e:  # noqa: BLE001
+                log.warning("Error running detect_mad: %s", e)
 
-        # Check for optional IsolationForest model
-        model_paths = [
-            _REPO_ROOT / "models" / "iforest_baseline.joblib",
-            _REPO_ROOT / "models" / "iforest.joblib",
-        ]
-        for mp in model_paths:
-            if mp.exists():
-                try:
-                    iforest_results = detect_iforest(df_metrics, mp)
-                    metric_anomalies.extend([r for r in iforest_results if r.get("is_anomaly")])
-                    break
-                except Exception as e:  # noqa: BLE001
-                    log.warning("Error running detect_iforest from %s: %s", mp, e)
+            # Check for optional IsolationForest model
+            model_paths = [
+                _REPO_ROOT / "models" / "iforest_baseline.joblib",
+                _REPO_ROOT / "models" / "iforest.joblib",
+            ]
+            for mp in model_paths:
+                if mp.exists():
+                    try:
+                        iforest_results = detect_iforest(grp, mp)
+                        metric_anomalies.extend([r for r in iforest_results if r.get("is_anomaly")])
+                        break
+                    except Exception as e:  # noqa: BLE001
+                        log.warning("Error running detect_iforest from %s: %s", mp, e)
 
     # Persist metric anomalies into anomaly_scores table (avoiding duplicates)
     stored_anomalies = 0

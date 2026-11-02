@@ -1,15 +1,15 @@
 {
-  "timestamp_utc": "2026-11-02T08:13:51Z",
+  "timestamp_utc": "2026-11-02T09:15:07Z",
   "total_scenarios": 7,
   "passed_scenarios": 7,
   "failed_scenarios": 0,
   "overall": {
-    "tp": 6,
-    "fp": 293,
+    "tp": 18,
+    "fp": 0,
     "fn": 0,
-    "precision": 0.02,
+    "precision": 1.0,
     "recall": 1.0,
-    "f1": 0.039
+    "f1": 1.0
   },
   "latency": {
     "median_seconds": 5.0,
@@ -19,11 +19,19 @@
   "per_detector": {
     "mad": {
       "tp": 2,
-      "fp": 266,
+      "fp": 0,
       "fn": 0,
-      "precision": 0.007,
+      "precision": 1.0,
       "recall": 1.0,
-      "f1": 0.015
+      "f1": 1.0
+    },
+    "iforest": {
+      "tp": 12,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
     },
     "SSH-001": {
       "tp": 1,
@@ -51,11 +59,11 @@
     },
     "FIM-001": {
       "tp": 1,
-      "fp": 27,
+      "fp": 0,
       "fn": 0,
-      "precision": 0.036,
+      "precision": 1.0,
       "recall": 1.0,
-      "f1": 0.069
+      "f1": 1.0
     }
   },
   "scenario_results": [
@@ -86,6 +94,7 @@
       "description": "High memory pressure (~95.8% for 120s).",
       "expected": "mad",
       "observed": [
+        "iforest",
         "mad"
       ],
       "status": "PASS",

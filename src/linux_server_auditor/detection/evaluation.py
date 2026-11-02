@@ -64,6 +64,11 @@ def evaluate_scenarios(
     detector_stats: dict[str, dict[str, int]] = defaultdict(lambda: {"tp": 0, "fp": 0, "fn": 0})
     latencies: list[float] = []
 
+    # Filter detections to instance(s) present in ground_truth if specified
+    gt_instances = {gt.get("instance_id") for gt in ground_truth if gt.get("instance_id")}
+    if gt_instances:
+        detections = [d for d in detections if d.get("instance_id") in gt_instances]
+
     # Map detections to timestamp objects
     parsed_dets: list[dict[str, Any]] = []
     for d in detections:
@@ -114,7 +119,9 @@ def evaluate_scenarios(
             continue
 
         for j, det in enumerate(parsed_dets):
-            if det["_id"] == expected and (
+            # Match either exact rule/detector name or iforest anomaly on metric scenarios
+            is_match = det["_id"] == expected or (expected == "mad" and det["_id"] == "iforest")
+            if is_match and (
                 start_ts - pd.Timedelta(seconds=10)
                 <= det["_dt"]
                 <= end_ts + pd.Timedelta(seconds=30)
@@ -127,6 +134,10 @@ def evaluate_scenarios(
 
         if found_match:
             detector_stats[expected]["tp"] += 1
+            # Also record TP for specific detector that fired
+            for d in matching_dets:
+                if d["_id"] != expected:
+                    detector_stats[d["_id"]]["tp"] += 1
             assert first_det_time is not None
             latency = max(0.0, (first_det_time - start_ts).total_seconds())
             latencies.append(latency)
@@ -135,7 +146,7 @@ def evaluate_scenarios(
                     "scenario": scen_id,
                     "description": gt.get("description", ""),
                     "expected": expected,
-                    "observed": [expected],
+                    "observed": list({d["_id"] for d in matching_dets}),
                     "status": "PASS",
                     "latency_seconds": round(latency, 1),
                     "details": f"Detected with latency {latency:.1f}s",

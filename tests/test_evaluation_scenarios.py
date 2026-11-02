@@ -42,6 +42,7 @@ def test_scenario_pipeline_and_evaluation():
     """End-to-end test of scenario population, detection, and evaluation."""
     with tempfile.TemporaryDirectory() as tmpdir:
         db_path = Path(tmpdir) / "test_eval.db"
+        gt_path = Path(tmpdir) / "test_gt.csv"
         out_json = Path(tmpdir) / "test_summary.json"
 
         db = Database(db_path)
@@ -55,10 +56,15 @@ def test_scenario_pipeline_and_evaluation():
         assert summary["metrics_inserted"] > 0
         assert summary["scenarios_generated"] >= 5
 
+        # Move/copy ground truth so default path isn't modified
+        import shutil
+
+        shutil.copy("data/ground_truth.csv", gt_path)
+
         # Evaluate against the database
         results = run_full_evaluation(
             db_path=db_path,
-            gt_path=Path("data/ground_truth.csv"),
+            gt_path=gt_path,
             output_path=out_json,
         )
         assert results["total_scenarios"] >= 5
