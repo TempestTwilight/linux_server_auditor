@@ -1,0 +1,141 @@
+{
+  "timestamp_utc": "2026-11-02T07:35:46Z",
+  "total_scenarios": 7,
+  "passed_scenarios": 7,
+  "failed_scenarios": 0,
+  "overall": {
+    "tp": 6,
+    "fp": 0,
+    "fn": 0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+  },
+  "latency": {
+    "median_seconds": 5.0,
+    "p95_seconds": 10.0,
+    "samples": 6
+  },
+  "per_detector": {
+    "mad": {
+      "tp": 2,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "SSH-001": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "NET-001": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "SVC-001": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "FIM-001": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    }
+  },
+  "scenario_results": [
+    {
+      "scenario": "SCEN-NORMAL-01",
+      "description": "Baseline normal operation (no alert expected).",
+      "expected": "none",
+      "observed": [
+        "none"
+      ],
+      "status": "PASS",
+      "latency_seconds": null,
+      "details": "No false alarms triggered during baseline window"
+    },
+    {
+      "scenario": "SCEN-CPU-01",
+      "description": "Sustained high CPU spike (~96.5% for 120s).",
+      "expected": "mad",
+      "observed": [
+        "mad"
+      ],
+      "status": "PASS",
+      "latency_seconds": 0.0,
+      "details": "Detected with latency 0.0s"
+    },
+    {
+      "scenario": "SCEN-MEM-01",
+      "description": "High memory pressure (~95.8% for 120s).",
+      "expected": "mad",
+      "observed": [
+        "mad"
+      ],
+      "status": "PASS",
+      "latency_seconds": 0.0,
+      "details": "Detected with latency 0.0s"
+    },
+    {
+      "scenario": "SCEN-SSH-01",
+      "description": "Repeated SSH authentication failure brute-force attempts.",
+      "expected": "SSH-001",
+      "observed": [
+        "SSH-001"
+      ],
+      "status": "PASS",
+      "latency_seconds": 0.0,
+      "details": "Detected with latency 0.0s"
+    },
+    {
+      "scenario": "SCEN-NET-01",
+      "description": "Unauthorized listening port 4444/tcp detected.",
+      "expected": "NET-001",
+      "observed": [
+        "NET-001"
+      ],
+      "status": "PASS",
+      "latency_seconds": 10.0,
+      "details": "Detected with latency 10.0s"
+    },
+    {
+      "scenario": "SCEN-SVC-01",
+      "description": "Critical service 'nginx' entered failed state.",
+      "expected": "SVC-001",
+      "observed": [
+        "SVC-001"
+      ],
+      "status": "PASS",
+      "latency_seconds": 10.0,
+      "details": "Detected with latency 10.0s"
+    },
+    {
+      "scenario": "SCEN-FIM-01",
+      "description": "File integrity change on /etc/passwd.",
+      "expected": "FIM-001",
+      "observed": [
+        "FIM-001"
+      ],
+      "status": "PASS",
+      "latency_seconds": 10.0,
+      "details": "Detected with latency 10.0s"
+    }
+  ],
+  "caveat": "Results are derived from repeatable synthetic test fixtures and controlled scenarios. They validate code and detection rule behavior rather than real-world attack protection."
+}

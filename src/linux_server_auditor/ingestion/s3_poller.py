@@ -71,12 +71,14 @@ class S3Poller:
             key = obj["Key"]
             if is_batch_processed(self.db, key):
                 continue
-            batches.append({
-                "key": key,
-                "etag": obj.get("ETag", "").strip('"'),
-                "size": obj.get("Size", 0),
-                "last_modified": obj.get("LastModified"),
-            })
+            batches.append(
+                {
+                    "key": key,
+                    "etag": obj.get("ETag", "").strip('"'),
+                    "size": obj.get("Size", 0),
+                    "last_modified": obj.get("LastModified"),
+                }
+            )
         return batches
 
     def download_batch(self, key: str) -> bytes | None:

@@ -89,7 +89,11 @@ def run(once: bool = False) -> None:
             max_queue_age_sec=acfg.get("local_queue_max_age_sec", 86_400),
             region=s3_cfg.get("region", "ap-south-1"),
         )
-        log.info("uploader initialized for bucket=%s prefix=%s", bucket, s3_cfg.get("prefix", "telemetry"))
+        log.info(
+            "uploader initialized for bucket=%s prefix=%s",
+            bucket,
+            s3_cfg.get("prefix", "telemetry"),
+        )
 
     seq = 0
     log.info("agent start: instance=%s run=%s", iid, run_id)

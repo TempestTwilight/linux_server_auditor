@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 from linux_server_auditor.detection.security_rules import evaluate_rules
 
 
@@ -41,7 +39,7 @@ def test_ssh001():
             "instance_id": "i-123",
         },
     ]
-    
+
     findings = evaluate_rules(events)
     ssh_findings = [f for f in findings if f["rule_id"] == "SSH-001"]
     assert len(ssh_findings) >= 1
@@ -60,7 +58,7 @@ def test_net001():
             "instance_id": "i-123",
         }
     ]
-    
+
     findings = evaluate_rules(events, baseline_ports=baseline)
     net_findings = [f for f in findings if f["rule_id"] == "NET-001"]
     assert len(net_findings) == 1
@@ -77,7 +75,7 @@ def test_svc001():
             "instance_id": "i-123",
         }
     ]
-    
+
     findings = evaluate_rules(events)
     svc_findings = [f for f in findings if f["rule_id"] == "SVC-001"]
     assert len(svc_findings) == 1
@@ -99,7 +97,7 @@ def test_fim001():
             "instance_id": "i-123",
         }
     ]
-    
+
     findings = evaluate_rules(events)
     fim_findings = [f for f in findings if f["rule_id"] == "FIM-001"]
     assert len(fim_findings) == 1

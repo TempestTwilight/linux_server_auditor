@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from linux_server_auditor.ingestion.deduplicator import DedupTracker, deduplicate, dedup_key
+from linux_server_auditor.ingestion.deduplicator import DedupTracker, dedup_key, deduplicate
 
 
 def _rec(instance_id="i-001", agent_run_id="run-1", sequence=1, **extra):
@@ -68,11 +68,11 @@ def test_content_hash_change_detected():
 def test_dedup_tracker_stateful():
     tracker = DedupTracker()
     batch1 = [_rec(sequence=i) for i in range(3)]
-    unique, errors = tracker.filter(batch1)
+    unique, _ = tracker.filter(batch1)
     assert len(unique) == 3
 
     batch2 = [_rec(sequence=i) for i in range(1, 5)]  # 1,2 already seen; 3,4 new
-    unique2, errors2 = tracker.filter(batch2)
+    unique2, _ = tracker.filter(batch2)
     assert len(unique2) == 2  # sequences 3 and 4 are new
 
 
@@ -90,7 +90,7 @@ def test_different_instance_ids_not_deduped():
         _rec(instance_id="i-002", sequence=1),
     ]
     seen: set = set()
-    unique, errors = deduplicate(records, seen)
+    unique, _errors = deduplicate(records, seen)
     assert len(unique) == 2
 
 
@@ -100,5 +100,5 @@ def test_different_agent_run_ids_not_deduped():
         _rec(agent_run_id="run-2", sequence=1),
     ]
     seen: set = set()
-    unique, errors = deduplicate(records, seen)
+    unique, _errors = deduplicate(records, seen)
     assert len(unique) == 2

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import json
-
 from linux_server_auditor.ingestion.validator import (
     MAX_BATCH_SIZE,
     MAX_RECORD_SIZE,

@@ -124,7 +124,7 @@ def get_security_events(
     rows = db.conn.execute(
         f"""
         SELECT * FROM security_events
-        WHERE {' AND '.join(conditions)}
+        WHERE {" AND ".join(conditions)}
         ORDER BY timestamp DESC LIMIT ?
         """,
         params,
@@ -142,15 +142,11 @@ def get_security_events(
 
 def is_batch_processed(db: Database, s3_key: str) -> bool:
     """Check if an S3 batch has already been processed."""
-    row = db.conn.execute(
-        "SELECT 1 FROM processed_batches WHERE s3_key = ?", (s3_key,)
-    ).fetchone()
+    row = db.conn.execute("SELECT 1 FROM processed_batches WHERE s3_key = ?", (s3_key,)).fetchone()
     return row is not None
 
 
-def mark_batch_processed(
-    db: Database, s3_key: str, etag: str | None, record_count: int
-) -> None:
+def mark_batch_processed(db: Database, s3_key: str, etag: str | None, record_count: int) -> None:
     """Mark an S3 batch as processed."""
     db.conn.execute(
         """
@@ -187,7 +183,7 @@ def create_incident(
     db: Database,
     instance_id: str,
     priority_score: float,
-    evidence: dict[str, Any],
+    evidence: Any,
 ) -> str:
     """Create a new incident. Returns incident_id."""
     incident_id = str(uuid.uuid4())
@@ -201,6 +197,23 @@ def create_incident(
         (incident_id, instance_id, priority_score, now, now, json.dumps(evidence)),
     )
     return incident_id
+
+
+def resolve_incident(
+    db: Database,
+    incident_id: str,
+    resolution_notes: str = "Resolved by operator",
+) -> bool:
+    """Mark an incident as resolved."""
+    cur = db.conn.execute(
+        """
+        UPDATE incidents
+        SET status = 'resolved', resolution_notes = ?
+        WHERE incident_id = ?
+        """,
+        (resolution_notes, incident_id),
+    )
+    return cur.rowcount > 0
 
 
 def get_open_incidents(db: Database, instance_id: str | None = None) -> list[dict[str, Any]]:
@@ -219,6 +232,32 @@ def get_open_incidents(db: Database, instance_id: str | None = None) -> list[dic
             """
             SELECT * FROM incidents WHERE status = 'open'
             ORDER BY priority_score DESC
+            """
+        ).fetchall()
+    results = []
+    for r in rows:
+        d = dict(r)
+        d["evidence"] = json.loads(d["evidence"]) if d["evidence"] else {}
+        results.append(d)
+    return results
+
+
+def get_all_incidents(db: Database, instance_id: str | None = None) -> list[dict[str, Any]]:
+    """Fetch all incidents (open and resolved)."""
+    if instance_id:
+        rows = db.conn.execute(
+            """
+            SELECT * FROM incidents
+            WHERE instance_id = ?
+            ORDER BY priority_score DESC, last_seen DESC
+            """,
+            (instance_id,),
+        ).fetchall()
+    else:
+        rows = db.conn.execute(
+            """
+            SELECT * FROM incidents
+            ORDER BY priority_score DESC, last_seen DESC
             """
         ).fetchall()
     results = []

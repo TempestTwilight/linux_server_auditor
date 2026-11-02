@@ -37,6 +37,8 @@ coverage.xml
 # Trained models and data
 *.joblib
 *.pkl
+*.db
+*.sqlite3
 data/raw/
 *.csv
 

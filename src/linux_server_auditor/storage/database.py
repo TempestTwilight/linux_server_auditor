@@ -34,6 +34,7 @@ class Database:
 
     def _init_schema(self) -> None:
         schema_sql = SCHEMA_PATH.read_text()
+        assert self._conn is not None
         self._conn.executescript(schema_sql)
         self._conn.commit()
 
@@ -48,9 +49,7 @@ class Database:
         cutoff = f"datetime('now', '-{days} days')"
         deleted = 0
         for table in ("metric_samples", "security_events"):
-            cur = self.conn.execute(
-                f"DELETE FROM {table} WHERE timestamp < {cutoff}"
-            )
+            cur = self.conn.execute(f"DELETE FROM {table} WHERE timestamp < {cutoff}")
             deleted += cur.rowcount
         self.conn.commit()
         if deleted:

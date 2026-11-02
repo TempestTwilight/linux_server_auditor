@@ -6,7 +6,7 @@ from __future__ import annotations
 def explain_finding(finding: dict) -> str:
     """Format a finding dict as readable text."""
     lines = []
-    
+
     if "rule_id" in finding:
         lines.append(f"[{finding['severity'].upper()}] {finding['rule_id']}")
         lines.append(f"Evidence: {finding['evidence']}")
@@ -19,7 +19,7 @@ def explain_finding(finding: dict) -> str:
         lines.append(f"Score: {score:.2f} (threshold: {finding.get('threshold', 'N/A')})")
         if finding.get("value") is not None:
             lines.append(f"Value: {finding['value']:.2f}")
-    
+
     return "\n".join(lines)
 
 
@@ -36,12 +36,12 @@ def explain_incident(incident: dict) -> str:
         "",
         "Details:",
     ]
-    
+
     for f in incident.get("evidence", []):
         lines.append("  " + explain_finding(f).replace("\n", "\n  "))
         lines.append("")
-    
+
     if incident.get("resolution_notes"):
         lines.append(f"Resolution: {incident['resolution_notes']}")
-    
+
     return "\n".join(lines)

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import datetime
-
 import pytest
 
 from linux_server_auditor.storage.database import Database
@@ -207,6 +205,7 @@ def test_no_open_incidents(db):
 def test_retention_deletes_old_records(db, monkeypatch):
     # Inject short retention via monkeypatching settings
     from linux_server_auditor.config import settings
+
     original = settings["monitor"]["retention_days"]
     settings["monitor"]["retention_days"] = 0  # Delete everything
 

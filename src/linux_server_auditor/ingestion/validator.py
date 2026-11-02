@@ -8,7 +8,15 @@ from typing import Any
 
 log = logging.getLogger(__name__)
 
-REQUIRED_FIELDS = ["schema_version", "record_id", "instance_id", "timestamp", "sequence", "type", "metrics"]
+REQUIRED_FIELDS = [
+    "schema_version",
+    "record_id",
+    "instance_id",
+    "timestamp",
+    "sequence",
+    "type",
+    "metrics",
+]
 VALID_TYPES = {"system_metrics", "process_metrics", "security_signals", "file_integrity"}
 MAX_RECORD_SIZE = 4096  # 4KB
 MAX_BATCH_SIZE = 1024 * 1024  # 1MB
@@ -60,7 +68,9 @@ def validate_record(record: dict[str, Any], size_bytes: int | None = None) -> li
     return errors
 
 
-def validate_batch(records: list[dict[str, Any]], total_bytes: int | None = None) -> tuple[list[dict[str, Any]], list[str]]:
+def validate_batch(
+    records: list[dict[str, Any]], total_bytes: int | None = None
+) -> tuple[list[dict[str, Any]], list[str]]:
     """Validate a batch of records. Returns (valid_records, all_errors)."""
     all_errors: list[str] = []
 

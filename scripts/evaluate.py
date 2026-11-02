@@ -1,128 +1,98 @@
 #!/usr/bin/env python3
-"""Run evaluation: compute precision, recall, F1, latency per detector."""
+"""Run evaluation: compute precision, recall, F1, latency per detector against ground truth."""
 
 from __future__ import annotations
 
 import argparse
-import sqlite3
-from collections import defaultdict
-from datetime import datetime
 from pathlib import Path
 
-import pandas as pd
+from linux_server_auditor.config import settings
+from linux_server_auditor.detection.evaluation import run_full_evaluation
 
-REPO_ROOT = Path(__file__).parent.parent
-
-
-def load_ground_truth(csv_path: Path) -> list[dict]:
-    """Load ground_truth.csv."""
-    if not csv_path.exists():
-        return []
-    df = pd.read_csv(csv_path)
-    return df.to_dict("records")
+REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
-def load_anomaly_scores(db_path: Path) -> list[dict]:
-    """Load anomaly_scores from SQLite."""
-    conn = sqlite3.connect(db_path)
-    df = pd.read_sql_query("SELECT * FROM anomaly_scores WHERE is_anomaly = 1", conn)
-    conn.close()
-    return df.to_dict("records")
-
-
-def load_incidents(db_path: Path) -> list[dict]:
-    """Load incidents from SQLite."""
-    conn = sqlite3.connect(db_path)
-    df = pd.read_sql_query("SELECT * FROM incidents", conn)
-    conn.close()
-    return df.to_dict("records")
-
-
-def evaluate(ground_truth: list[dict], detections: list[dict]) -> dict:
-    """Compute TP, FP, FN, precision, recall, F1."""
-    # ponytail: simple overlap match within ±5min window
-    matched_gt = set()
-    matched_det = set()
-    
-    for i, gt in enumerate(ground_truth):
-        gt_start = datetime.fromisoformat(gt["start_time"])
-        gt_end = datetime.fromisoformat(gt["end_time"])
-        expected = gt["expected_rule_or_detector"]
-        
-        for j, det in enumerate(detections):
-            if j in matched_det:
-                continue
-            
-            det_time = datetime.fromisoformat(det.get("timestamp", "1970-01-01T00:00:00Z").replace("Z", "+00:00"))
-            det_type = det.get("detector") or det.get("rule_id", "unknown")
-            
-            if det_type == expected and gt_start <= det_time <= gt_end:
-                matched_gt.add(i)
-                matched_det.add(j)
-                break
-    
-    tp = len(matched_gt)
-    fp = len(detections) - len(matched_det)
-    fn = len(ground_truth) - len(matched_gt)
-    
-    precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
-    recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
-    f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
-    
-    return {
-        "tp": tp,
-        "fp": fp,
-        "fn": fn,
-        "precision": precision,
-        "recall": recall,
-        "f1": f1,
-    }
-
-
-def main():
-    parser = argparse.ArgumentParser(description="Evaluate detection performance")
-    parser.add_argument("--db", default="data/auditor.db", help="SQLite database path")
-    parser.add_argument("--gt", default="data/ground_truth.csv", help="Ground truth CSV")
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Evaluate detection performance against ground truth"
+    )
+    parser.add_argument(
+        "--db",
+        default=settings.get("monitor", {}).get("db_path", "data/telemetry.db"),
+        help="SQLite database path",
+    )
+    parser.add_argument(
+        "--gt",
+        default="data/ground_truth.csv",
+        help="Ground truth CSV path",
+    )
+    parser.add_argument(
+        "--output",
+        default="data/evaluation_summary.json",
+        help="Output evaluation summary JSON path",
+    )
     args = parser.parse_args()
-    
+
     db_path = REPO_ROOT / args.db
     gt_path = REPO_ROOT / args.gt
-    
-    ground_truth = load_ground_truth(gt_path)
-    print(f"Loaded {len(ground_truth)} ground truth scenarios")
-    
+    out_path = REPO_ROOT / args.output
+
     if not db_path.exists():
-        print(f"Database not found: {db_path}")
+        print(f"[!] Database not found: {db_path}")
+        print(
+            "    Tip: run 'python scripts/inject_scenario.py --all' or 'python scripts/inject_scenario.py --demo' first."
+        )
         return
-    
-    anomalies = load_anomaly_scores(db_path)
-    incidents = load_incidents(db_path)
-    print(f"Loaded {len(anomalies)} anomaly scores, {len(incidents)} incidents")
-    
-    # Evaluate per detector
-    by_detector = defaultdict(list)
-    for a in anomalies:
-        by_detector[a["detector"]].append(a)
-    
-    print("\nPer-detector evaluation:")
-    for det, dets in by_detector.items():
-        result = evaluate(ground_truth, dets)
-        print(f"{det}: TP={result['tp']} FP={result['fp']} FN={result['fn']} "
-              f"P={result['precision']:.2f} R={result['recall']:.2f} F1={result['f1']:.2f}")
-    
-    # Evaluate incidents
-    if incidents:
-        # Flatten incident evidence into detections
-        incident_detections = []
-        for inc in incidents:
-            # ponytail: simplified, assumes evidence is list of findings
-            incident_detections.append({
-                "timestamp": inc["first_seen"],
-                "rule_id": "incident",
-            })
-        result = evaluate(ground_truth, incident_detections)
-        print(f"\nIncidents: TP={result['tp']} FP={result['fp']} FN={result['fn']} "
-              f"P={result['precision']:.2f} R={result['recall']:.2f} F1={result['f1']:.2f}")
+
+    if not gt_path.exists():
+        print(f"[!] Ground truth CSV not found: {gt_path}")
+        return
+
+    summary = run_full_evaluation(db_path, gt_path, out_path)
+
+    print("=" * 70)
+    print("  LINUX SERVER AUDITOR — EVALUATION SUMMARY (TARGET B)")
+    print("=" * 70)
+    print(f"Timestamp:       {summary['timestamp_utc']}")
+    print(
+        f"Scenarios Total: {summary['total_scenarios']}  |  Passed: {summary['passed_scenarios']}  |  Failed: {summary['failed_scenarios']}"
+    )
+    print(
+        f"Overall Metrics: Precision = {summary['overall']['precision']:.2f}  |  Recall = {summary['overall']['recall']:.2f}  |  F1 = {summary['overall']['f1']:.2f}"
+    )
+    print(
+        f"Latency:         Median = {summary['latency']['median_seconds']}s  |  P95 = {summary['latency']['p95_seconds']}s"
+    )
+    print("-" * 70)
+    print(
+        f"{'Detector / Rule':<18} {'TP':<5} {'FP':<5} {'FN':<5} {'Precision':<10} {'Recall':<8} {'F1':<6}"
+    )
+    print("-" * 70)
+
+    for det_id, metrics in summary["per_detector"].items():
+        print(
+            f"{det_id:<18} "
+            f"{metrics['tp']:<5} "
+            f"{metrics['fp']:<5} "
+            f"{metrics['fn']:<5} "
+            f"{metrics['precision']:<10.2f} "
+            f"{metrics['recall']:<8.2f} "
+            f"{metrics['f1']:<6.2f}"
+        )
+
+    print("-" * 70)
+    print("Scenario Results:")
+    for s in summary["scenario_results"]:
+        status_tag = "[PASS]" if s["status"] == "PASS" else "[FAIL]"
+        lat = f"{s['latency_seconds']}s" if s["latency_seconds"] is not None else "N/A"
+        print(
+            f"  {status_tag:<7} {s['scenario']:<16} Expected: {s['expected']:<8} Latency: {lat:<6} ({s['details']})"
+        )
+
+    print("-" * 70)
+    print(f"[+] Full evaluation summary written to: {out_path}")
+    print(f"[*] Note: {summary['caveat']}")
+    print("=" * 70)
 
 
 if __name__ == "__main__":

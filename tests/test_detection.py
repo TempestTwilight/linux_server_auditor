@@ -2,14 +2,11 @@
 
 from __future__ import annotations
 
-import sqlite3
-from pathlib import Path
-
 import pandas as pd
 import pytest
 
 from linux_server_auditor.detection.isolation_forest import detect_iforest, train_model
-from linux_server_auditor.detection.preprocessing import METRIC_COLUMNS, prepare_metrics
+from linux_server_auditor.detection.preprocessing import prepare_metrics
 from linux_server_auditor.detection.statistical import detect_mad
 
 
@@ -51,13 +48,14 @@ def test_train_and_detect_iforest(tmp_path, sample_metrics):
     model, features = train_model(sample_metrics)
     assert model is not None
     assert "cpu_percent" in features
-    
+
     import joblib
+
     model_path = tmp_path / "test.joblib"
     meta_path = tmp_path / "test.meta.joblib"
     joblib.dump(model, model_path)
     joblib.dump({"features": features, "model_version": "test_v1"}, meta_path)
-    
+
     anomalies = detect_iforest(sample_metrics, model_path)
     assert isinstance(anomalies, list)
     if anomalies:

@@ -40,16 +40,20 @@ def detect_mad(df: pd.DataFrame, window_hours: float = 1.0) -> list[dict]:
 
         thresh = thresholds.get(col, 6.0)
         for idx in score[score > thresh].index:
-            results.append({
-                "instance_id": df.loc[idx, "instance_id"] if "instance_id" in df.columns else "unknown",
-                "timestamp": df.loc[idx, "timestamp"] if "timestamp" in df.columns else None,
-                "detector": "mad",
-                "feature": col,
-                "value": float(df.loc[idx, col]),
-                "score": float(score.loc[idx]),
-                "threshold": thresh,
-                "is_anomaly": True,
-                "model_version": "mad_v1",
-            })
+            results.append(
+                {
+                    "instance_id": df.loc[idx, "instance_id"]
+                    if "instance_id" in df.columns
+                    else "unknown",
+                    "timestamp": df.loc[idx, "timestamp"] if "timestamp" in df.columns else None,
+                    "detector": "mad",
+                    "feature": col,
+                    "value": float(df.loc[idx, col]),
+                    "score": float(score.loc[idx]),
+                    "threshold": thresh,
+                    "is_anomaly": True,
+                    "model_version": "mad_v1",
+                }
+            )
 
     return results

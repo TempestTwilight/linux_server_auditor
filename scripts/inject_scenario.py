@@ -1,125 +1,79 @@
 #!/usr/bin/env python3
-"""Inject test scenarios (CPU spike, memory leak, SSH brute-force, new port, service stop, file change)."""
+"""Inject test scenarios (CPU spike, memory pressure, SSH brute-force, new port, service failure, file change).
+
+Supports injecting into local SQLite database for Target B evaluation and demonstrations.
+"""
 
 from __future__ import annotations
 
-import csv
-import hashlib
-import socket
-import tempfile
-import time
-from datetime import datetime, timezone
+import argparse
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).parent.parent
-GROUND_TRUTH_CSV = REPO_ROOT / "data" / "ground_truth.csv"
+from linux_server_auditor.config import settings
+from linux_server_auditor.scenarios import SCENARIO_CATALOG, populate_database
+from linux_server_auditor.storage.database import Database
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
-def inject_cpu_spike(duration_sec: int = 30):
-    """Busy loop CPU spike."""
-    print(f"Injecting CPU spike for {duration_sec}s...")
-    start = time.time()
-    while time.time() - start < duration_sec:
-        _ = sum(i**2 for i in range(10000))
-    print("CPU spike complete.")
-    return "cpu_spike", "mad"
-
-
-def inject_memory_pressure(duration_sec: int = 30, size_mb: int = 100):
-    """Allocate large array."""
-    print(f"Injecting memory pressure ({size_mb}MB) for {duration_sec}s...")
-    data = bytearray(size_mb * 1024 * 1024)
-    time.sleep(duration_sec)
-    del data
-    print("Memory pressure complete.")
-    return "memory_pressure", "mad"
-
-
-def inject_ssh_brute_force(count: int = 10):
-    """Write fake auth.log lines."""
-    print(f"Injecting {count} fake SSH failed login events...")
-    # ponytail: writes to tmp file, real scenario would inject into DB
-    tmp = tempfile.NamedTemporaryFile(mode="w", delete=False, suffix="_auth.log")
-    for i in range(count):
-        tmp.write(f"Jan 1 12:00:{i:02d} host sshd[1234]: Failed password for invalid user admin from 192.168.1.100\n")
-    tmp.close()
-    print(f"Wrote fake auth.log to {tmp.name}")
-    return "ssh_brute_force", "SSH-001"
-
-
-def inject_new_port():
-    """Start a socket server on random high port."""
-    print("Injecting new listening port...")
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.bind(("127.0.0.1", 0))
-    sock.listen(1)
-    port = sock.getsockname()[1]
-    print(f"Listening on port {port}. Press Ctrl+C to stop.")
-    print("(In real scenario, this would be detected via listening_ports event)")
-    try:
-        time.sleep(60)
-    except KeyboardInterrupt:
-        pass
-    finally:
-        sock.close()
-    return "new_listening_port", "NET-001"
-
-
-def inject_file_change():
-    """Modify a temp file's hash."""
-    print("Injecting file integrity change...")
-    tmp = tempfile.NamedTemporaryFile(mode="w", delete=False, suffix="_watchfile")
-    tmp.write("original content")
-    tmp.close()
-    
-    old_hash = hashlib.sha256(Path(tmp.name).read_bytes()).hexdigest()
-    time.sleep(1)
-    Path(tmp.name).write_text("modified content")
-    new_hash = hashlib.sha256(Path(tmp.name).read_bytes()).hexdigest()
-    
-    print(f"File {tmp.name} hash changed: {old_hash[:8]} -> {new_hash[:8]}")
-    return "file_integrity_change", "FIM-001"
-
-
-def record_ground_truth(scenario: str, expected_detector: str, start_time: datetime, end_time: datetime):
-    """Append to ground_truth.csv."""
-    GROUND_TRUTH_CSV.parent.mkdir(parents=True, exist_ok=True)
-    
-    write_header = not GROUND_TRUTH_CSV.exists()
-    with GROUND_TRUTH_CSV.open("a") as f:
-        writer = csv.DictWriter(f, fieldnames=["scenario", "start_time", "end_time", "expected_rule_or_detector"])
-        if write_header:
-            writer.writeheader()
-        writer.writerow({
-            "scenario": scenario,
-            "start_time": start_time.isoformat(),
-            "end_time": end_time.isoformat(),
-            "expected_rule_or_detector": expected_detector,
-        })
-
-
-def main():
-    import argparse
-    parser = argparse.ArgumentParser(description="Inject test scenarios")
-    parser.add_argument("scenario", choices=["cpu_spike", "memory_pressure", "ssh_brute", "new_port", "file_change"])
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Inject controlled test scenarios for Target B evaluation"
+    )
+    parser.add_argument(
+        "--demo",
+        action="store_true",
+        help="Generate full 2.5-hour baseline and all controlled anomaly scenarios into SQLite database",
+    )
+    parser.add_argument(
+        "--all",
+        action="store_true",
+        help="Alias for --demo: inject complete suite of controlled scenarios",
+    )
+    parser.add_argument(
+        "--db",
+        default=settings.get("monitor", {}).get("db_path", "data/telemetry.db"),
+        help="Path to target SQLite database",
+    )
+    parser.add_argument(
+        "--host",
+        default="demo-ec2-host",
+        help="Monitored instance/host ID for injected records",
+    )
+    parser.add_argument(
+        "--list",
+        action="store_true",
+        help="List available controlled scenarios",
+    )
     args = parser.parse_args()
-    
-    start = datetime.now(timezone.utc)
-    
-    if args.scenario == "cpu_spike":
-        scenario, detector = inject_cpu_spike()
-    elif args.scenario == "memory_pressure":
-        scenario, detector = inject_memory_pressure()
-    elif args.scenario == "ssh_brute":
-        scenario, detector = inject_ssh_brute_force()
-    elif args.scenario == "new_port":
-        scenario, detector = inject_new_port()
-    elif args.scenario == "file_change":
-        scenario, detector = inject_file_change()
-    
-    end = datetime.now(timezone.utc)
-    record_ground_truth(scenario, detector, start, end)
-    print(f"Ground truth recorded to {GROUND_TRUTH_CSV}")
+
+    if args.list:
+        print("Available Controlled Scenarios:")
+        for s in SCENARIO_CATALOG:
+            print(
+                f"  [{s['id']}] {s['name']} (Severity: {s['severity']}, Expected: {s['expected_rule_or_detector']})"
+            )
+            print(f"      {s['description']}")
+        return
+
+    db_path = REPO_ROOT / args.db
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    db = Database(db_path)
+
+    print(f"[*] Injecting controlled test scenarios into {db_path}...")
+    summary = populate_database(db, instance_id=args.host, write_ground_truth=True)
+
+    print("[+] Scenarios injected successfully!")
+    print(f"    - System metric samples: {summary['metrics_inserted']}")
+    print(f"    - Security event records: {summary['security_events_inserted']}")
+    print(f"    - Ground truth scenarios: {summary['scenarios_generated']}")
+    print(f"    - Metric anomalies detected: {summary['detection_results']['metric_anomalies']}")
+    print(f"    - Security rule findings: {summary['detection_results']['security_findings']}")
+    print(
+        f"    - Correlated incidents: {summary['detection_results']['total_correlated_incidents']}"
+    )
+    print("[+] Ground truth recorded to data/ground_truth.csv")
+    print("[+] Ready to evaluate: run 'python scripts/evaluate.py'")
 
 
 if __name__ == "__main__":
